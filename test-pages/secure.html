@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Page: Secure Architecture (Server-Side Grading)</title>
+  <style>
+    body { font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; line-height: 1.5; }
+    .question-card { border: 1px solid #ccc; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    .option { display: block; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <h1>Sample Assessment Page (Secure)</h1>
+  <p><em>Test fixture simulating an existing website where the server retains grading keys and client receives questions only.</em></p>
+
+  <div class="question-card" data-question-id="101">
+    <h3>1. What is 2 + 2?</h3>
+    <label class="option"><input type="radio" name="q101" value="0"> A. 3</label>
+    <label class="option"><input type="radio" name="q101" value="1"> B. 4</label>
+    <label class="option"><input type="radio" name="q101" value="2"> C. 5</label>
+    <label class="option"><input type="radio" name="q101" value="3"> D. 6</label>
+  </div>
+
+  <div class="question-card" data-question-id="102">
+    <h3>2. Which protocol is connectionless?</h3>
+    <label class="option"><input type="radio" name="q102" value="0"> A. TCP</label>
+    <label class="option"><input type="radio" name="q102" value="1"> B. UDP</label>
+    <label class="option"><input type="radio" name="q102" value="2"> C. FTP</label>
+    <label class="option"><input type="radio" name="q102" value="3"> D. SSH</label>
+  </div>
+
+  <script>
+    // SECURE ARCHITECTURE: Client receives questions only.
+    // Answers remain on the server. No client-side answer key exists.
+    const secureQuestions = [
+      { id: 101, question: "What is 2 + 2?", options: ["3", "4", "5", "6"] },
+      { id: 102, question: "Which protocol is connectionless?", options: ["TCP", "UDP", "FTP", "SSH"] }
+    ];
+  </script>
+</body>
+</html>

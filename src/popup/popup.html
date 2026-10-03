@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizKey Inspector</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="branding">
+        <span class="brand-icon">🔎</span>
+        <div>
+          <h1 class="brand-title">QuizKey Inspector</h1>
+          <p class="brand-subtitle">Client-Side Assessment Security Audit</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Site & Authorization Status Card -->
+    <div class="site-card">
+      <div class="site-row">
+        <span class="site-label">Current site:</span>
+        <strong id="site-domain" class="site-value">Scanning...</strong>
+      </div>
+      <div class="site-row">
+        <span class="site-label">Audit:</span>
+        <span id="audit-badge" class="audit-badge audit-unauthorized">NOT AUTHORIZED</span>
+      </div>
+      <p id="audit-notice" class="audit-notice">
+        Auditing is disabled by default for safety. Only authorize sites you own or have explicit permission to audit.
+      </p>
+      <div class="auth-btn-row">
+        <button id="btn-toggle-auth" class="btn btn-auth">
+          🛡️ Authorize Audit For This Site
+        </button>
+      </div>
+    </div>
+
+    <!-- Metrics Summary -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span id="metric-questions" class="metric-value">0</span>
+        <span class="metric-label">Questions detected</span>
+      </div>
+      <div class="metric-card">
+        <span id="metric-mappings" class="metric-value metric-danger">0</span>
+        <span class="metric-label">Client-side answer mappings</span>
+      </div>
+    </div>
+
+    <!-- Confidence Breakdown -->
+    <div class="confidence-grid">
+      <div class="confidence-item conf-high">
+        <span class="conf-label">HIGH</span>
+        <span id="count-high" class="conf-value">0</span>
+      </div>
+      <div class="confidence-item conf-medium">
+        <span class="conf-label">MEDIUM</span>
+        <span id="count-medium" class="conf-value">0</span>
+      </div>
+      <div class="confidence-item conf-low">
+        <span class="conf-label">LOW</span>
+        <span id="count-low" class="conf-value">0</span>
+      </div>
+    </div>
+
+    <!-- Scan & Inspection Actions -->
+    <div class="action-grid">
+      <button id="btn-scan" class="btn btn-primary" title="Scan the current open page">
+        🔍 Scan Current Page
+      </button>
+      <button id="btn-rescan" class="btn btn-secondary" title="Re-run scanning on current page">
+        🔄 Rescan
+      </button>
+      <button id="btn-evidence" class="btn btn-secondary" title="Toggle technical evidence details">
+        📋 View Evidence
+      </button>
+      <button id="btn-clear" class="btn btn-danger-outline" title="Clear detected findings">
+        🗑️ Clear Findings
+      </button>
+    </div>
+
+    <!-- Findings Section -->
+    <section class="findings-section">
+      <div class="findings-header">
+        <h2 class="findings-title">Detected Findings</h2>
+        <span id="findings-count" class="badge">0</span>
+      </div>
+      <div id="findings-list" class="findings-list">
+        <div class="empty-state">
+          <p id="empty-state-text">No client-side answer keys detected.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer & Privacy Notice -->
+    <footer class="popup-footer">
+      <p>Analysis happens locally in your browser. Zero telemetry or external requests.</p>
+    </footer>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

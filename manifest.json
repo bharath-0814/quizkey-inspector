@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "QuizKey Inspector",
+  "version": "1.0.0",
+  "description": "Authorized security audit tool to identify client-side answer key exposure on online MCQ and assessment pages.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "QuizKey Inspector"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/network/network-monitor.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content.bundle.js"],
+      "css": ["src/content/styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/content/styles.css", "icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

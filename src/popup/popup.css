@@ -1,0 +1,441 @@
+/**
+ * QuizKey Inspector - Popup Styles
+ * Responsive, dark/light compatible, compact inspector dashboard.
+ */
+
+:root {
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+
+  --danger: #ef4444;
+  --danger-bg: #fee2e2;
+  --danger-text: #991b1b;
+
+  --warning: #f59e0b;
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
+
+  --success: #10b981;
+  --success-bg: #d1fae5;
+  --success-text: #065f46;
+
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #09090b;
+    --card-bg: #18181b;
+    --text: #f4f4f5;
+    --text-muted: #a1a1aa;
+    --border: #27272a;
+
+    --danger-bg: rgba(239, 68, 68, 0.2);
+    --danger-text: #fca5a5;
+
+    --warning-bg: rgba(245, 158, 11, 0.2);
+    --warning-text: #fde68a;
+
+    --success-bg: rgba(16, 185, 129, 0.2);
+    --success-text: #6ee7b7;
+
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 390px;
+  min-height: 500px;
+  max-height: 600px;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.popup-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Header */
+.popup-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.branding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-icon {
+  font-size: 22px;
+}
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.brand-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Site & Authorization Card */
+.site-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.site-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+}
+
+.site-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.site-value {
+  font-weight: 700;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.3px;
+}
+
+.audit-authorized {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success);
+}
+
+.audit-unauthorized {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning);
+}
+
+.audit-notice {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  background: var(--bg);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.auth-btn-row {
+  margin-top: 2px;
+}
+
+.btn-auth {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  background: var(--card-bg);
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+
+.btn-auth:hover {
+  background: var(--border);
+}
+
+.btn-auth-danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-auth-danger:hover {
+  background: var(--danger-bg);
+}
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.metric-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.metric-value {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.metric-danger {
+  color: var(--danger);
+}
+
+.metric-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Confidence Grid */
+.confidence-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.confidence-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.conf-high {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.conf-medium {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.conf-low {
+  border-color: var(--text-muted);
+  color: var(--text-muted);
+}
+
+/* Actions Grid */
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.btn {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-secondary {
+  background: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--border);
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.btn-danger-outline:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Findings Section */
+.findings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.findings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.findings-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.findings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.empty-state {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--card-bg);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Finding Item Card */
+.finding-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--danger);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.finding-card-medium {
+  border-left-color: var(--warning);
+}
+
+.finding-card-low {
+  border-left-color: var(--text-muted);
+}
+
+.finding-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.finding-card-question {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.finding-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.finding-badge-high {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.finding-badge-medium {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.finding-badge-low {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.finding-card-answer {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.finding-card-answer strong {
+  color: var(--danger);
+}
+
+.finding-card-evidence {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--border);
+  word-break: break-all;
+}
+
+/* Footer */
+.popup-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
