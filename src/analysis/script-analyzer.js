@@ -102,7 +102,7 @@ export class ScriptAnalyzer {
 
   /**
    * Safely extracts and converts JS object/array literals into JSON structures without eval
-   * Works against readable, minified, and bundled code.
+   * Works against readable, minified, and bundled code using balanced bracket parsing.
    * 
    * @param {string} code 
    * @returns {Array<Object>}
@@ -111,35 +111,107 @@ export class ScriptAnalyzer {
     const results = [];
     if (typeof code !== 'string') return results;
 
-    // Check if the script contains answer-related keywords before doing expensive extraction
-    const hasAnswerKeyword = /(?:correct(?:Answer|Index|Option|Choice|Idx)?|solution(?:Index)?|answerKey|isCorrect)\s*[:=]/i.test(code);
-    if (!hasAnswerKeyword) {
+    // Check if the script contains assessment or answer-related keywords before parsing
+    const hasKeyword = /(?:correct|solution|answer|isCorrect|score|points|weight)/i.test(code);
+    if (!hasKeyword) {
       return results;
     }
 
-    // Pattern to match array of objects: `[ { ... } ]`
-    // Or assignments: `var/let/const/this.questions = [ ... ];`
-    const arrayMatch = code.match(/(?:questions|quiz|assessment|items|problems)\s*=\s*(\[\s*\{[\s\S]*?\}\s*\])/i);
-    if (arrayMatch && arrayMatch[1]) {
-      const parsedArray = this.safeParseJsLiteral(arrayMatch[1]);
-      if (parsedArray) {
-        results.push(parsedArray);
-      }
-    }
+    // Find assignments: `= \s* [ { or [ ]`
+    const assignmentRegex = /=\s*([{\[])/g;
+    let match;
 
-    // If no array assignment matched, look for individual question objects: `{ ... "question" ... "correct" ... }`
-    if (results.length === 0) {
-      const objRegex = /\{[^{}]*(?:question|prompt|text)[^{}]*(?:options|choices)[^{}]*(?:correct|answer|solution)[^{}]*\}/gi;
-      let objMatch;
-      while ((objMatch = objRegex.exec(code)) !== null) {
-        const parsedObj = this.safeParseJsLiteral(objMatch[0]);
-        if (parsedObj) {
-          results.push(parsedObj);
+    while ((match = assignmentRegex.exec(code)) !== null) {
+      const startIndex = match.index + match[0].length - 1; // index of '{' or '['
+      const literalStr = this.extractBalancedLiteral(code, startIndex);
+      if (literalStr) {
+        const parsed = this.safeParseJsLiteral(literalStr);
+        if (parsed && typeof parsed === 'object') {
+          results.push(parsed);
         }
       }
     }
 
     return results;
+  }
+
+  /**
+   * Extracts a balanced JS object/array literal starting at startIndex
+   * Tracks string literals, escapes, and comments safely.
+   * 
+   * @param {string} code 
+   * @param {number} startIndex 
+   * @returns {string|null}
+   */
+  static extractBalancedLiteral(code, startIndex) {
+    const startChar = code[startIndex];
+    if (startChar !== '{' && startChar !== '[') return null;
+
+    let depth = 0;
+    let inString = false;
+    let stringQuote = '';
+    let inLineComment = false;
+    let inBlockComment = false;
+
+    for (let i = startIndex; i < code.length; i++) {
+      const ch = code[i];
+      const prev = i > 0 ? code[i - 1] : '';
+
+      // Line comments
+      if (inLineComment) {
+        if (ch === '\n' || ch === '\r') {
+          inLineComment = false;
+        }
+        continue;
+      }
+
+      // Block comments
+      if (inBlockComment) {
+        if (ch === '/' && prev === '*') {
+          inBlockComment = false;
+        }
+        continue;
+      }
+
+      // Strings
+      if (inString) {
+        if (ch === stringQuote && prev !== '\\') {
+          inString = false;
+        }
+        continue;
+      }
+
+      // Check comments start
+      if (ch === '/' && code[i + 1] === '/') {
+        inLineComment = true;
+        i++;
+        continue;
+      }
+      if (ch === '/' && code[i + 1] === '*') {
+        inBlockComment = true;
+        i++;
+        continue;
+      }
+
+      // Check string start
+      if (ch === '"' || ch === "'" || ch === '`') {
+        inString = true;
+        stringQuote = ch;
+        continue;
+      }
+
+      // Brackets depth
+      if (ch === '{' || ch === '[') {
+        depth++;
+      } else if (ch === '}' || ch === ']') {
+        depth--;
+        if (depth === 0) {
+          return code.slice(startIndex, i + 1);
+        }
+      }
+    }
+
+    return null;
   }
 
   /**

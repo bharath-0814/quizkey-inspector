@@ -69,13 +69,19 @@ quizkey-inspector/
 │       ├── types.js               # Normalized finding models & thresholds
 │       └── utils.js               # Domain extraction, text normalization & safe DOM helpers
 ├── test-pages/                    # Minimal static test fixtures (NOT a quiz platform)
-│   ├── exposed-js.html            # Fixture 1: Inline JavaScript array answer key
-│   ├── exposed-json.html          # Fixture 2: Embedded JSON state tag
-│   ├── exposed-storage.html       # Fixture 3: localStorage quiz answer leak
-│   ├── exposed-api.html           # Fixture 4: API response containing correctIndex
-│   ├── exposed-encoded.html       # Fixture 5: Base64 encoded answer in data attribute
-│   └── secure.html                # Fixture 6: Server-side grading (no client-side answer key)
-└── tests/                         # Automated test suite (34 tests)
+│   ├── index.html                 # Test fixture hub and directory
+│   ├── exposed-randomized.html    # Fixture 1: Randomized option order resolution
+│   ├── exposed-response-ids.html  # Fixture 2: Author correctOptionId / correctResponseId
+│   ├── exposed-scoring.html       # Fixture 3: Author response scoring metadata
+│   ├── exposed-choices-flags.html # Fixture 4: Choices with embedded isCorrect: true flags
+│   ├── exposed-answer-key-map.html# Fixture 5: External answerKey dictionary mapping
+│   ├── exposed-js.html            # Fixture 6: Inline JavaScript array answer key
+│   ├── exposed-json.html          # Fixture 7: Embedded JSON state tag
+│   ├── exposed-storage.html       # Fixture 8: localStorage quiz answer leak
+│   ├── exposed-api.html           # Fixture 9: API response containing correctIndex
+│   ├── exposed-encoded.html       # Fixture 10: Base64 encoded answer in data attribute
+│   └── secure.html                # Fixture 11: Server-side grading (no client-side answer key)
+└── tests/                         # Automated test suite (48 tests)
     ├── authorization.test.js
     ├── encoding-analyzer.test.js
     ├── json-analyzer.test.js
@@ -104,7 +110,7 @@ npm run build
 ```bash
 npm test
 ```
-*Executes all 34 unit and end-to-end integration tests using Node.js's native test runner.*
+*Executes all 48 unit and end-to-end integration tests using Node.js's native test runner.*
 
 ---
 
@@ -134,7 +140,7 @@ Follow these steps to load QuizKey Inspector into Chromium, Google Chrome, Brave
      ┌─────────────────────────────────┐
      │ 🔎 QUIZKEY INSPECTOR            │
      │                                 │
-     │ Client-side answer exposed      │
+     │ AUTHOR ANSWER KEY EXPOSED       │
      │                                 │
      │ Correct option: B. UDP          │
      │ Confidence: HIGH                │
@@ -152,10 +158,15 @@ Follow these steps to load QuizKey Inspector into Chromium, Google Chrome, Brave
 
 ## 🧪 Testing with Included Static Fixtures
 
-The repository includes 6 static test fixtures in `test-pages/` specifically designed to verify analyzer behavior without hosting any quiz platform:
+The repository includes static test fixtures in `test-pages/` (accessible via `test-pages/index.html`) specifically designed to verify analyzer behavior without hosting any quiz platform:
 
 | Test Fixture | Exposure Method Tested | Expected Inspector Result |
 |---|---|---|
+| `test-pages/exposed-randomized.html` | Shuffled DOM order (`author index 1 = UDP`, DOM order is C. UDP) | **C. UDP** accurately correlated (HIGH confidence) |
+| `test-pages/exposed-response-ids.html` | Author grading via `correctOptionId: "opt_udp"` | **B. UDP** correlated via option ID (HIGH confidence) |
+| `test-pages/exposed-scoring.html` | Choices scoring metadata (`score: 1` vs `score: 0`) | **B. UDP** correlated via score (HIGH confidence) |
+| `test-pages/exposed-choices-flags.html` | Embedded choice boolean (`isCorrect: true`) | **B. UDP** correlated via flag (HIGH confidence) |
+| `test-pages/exposed-answer-key-map.html` | External dictionary mapping (`answerKey: { "1": "B" }`) | **B. UDP** correlated via map (HIGH confidence) |
 | `test-pages/exposed-js.html` | Inline JavaScript variable (`questions = [{ correctAnswer: "4" }]`) | **B. 4** detected (HIGH confidence) |
 | `test-pages/exposed-json.html` | `<script type="application/json">` hydration state | **B. Queue** detected (HIGH confidence) |
 | `test-pages/exposed-storage.html` | `localStorage` item with answer payload | **C. AES-256** detected (HIGH confidence) |

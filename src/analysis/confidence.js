@@ -34,7 +34,7 @@ export class ConfidenceEngine {
       reasons.push('Direct DOM attribute on option element (score +95)');
     }
 
-    if (signals.exactQuestionIdMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption)) {
+    if (signals.exactQuestionIdMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption || signals.idMatchOnOption)) {
       score = Math.max(score, 100);
       reasons.push('Exact question ID match with correlated option (score: 100)');
     } else if (signals.exactQuestionIdMatch) {
@@ -45,22 +45,32 @@ export class ConfidenceEngine {
     if (signals.exactQuestionTextMatch && signals.answerIndexMatchesOption) {
       score = Math.max(score, 90);
       reasons.push('Exact question text match with answer index (score: 90)');
-    } else if (signals.exactQuestionTextMatch && signals.answerMatchesOptionValue) {
+    } else if (signals.exactQuestionTextMatch && (signals.answerMatchesOptionValue || signals.idMatchOnOption)) {
       score = Math.max(score, 85);
       reasons.push('Exact question text match with answer value (score: 85)');
-    } else if (signals.normalizedQuestionTextMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption)) {
+    } else if (signals.normalizedQuestionTextMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption || signals.idMatchOnOption)) {
       score = Math.max(score, 80);
       reasons.push('Normalized question text match with answer (score: 80)');
     }
 
-    if (signals.exactOptionListMatch && signals.answerIndexMatchesOption) {
+    if (signals.exactOptionListMatch && (signals.answerIndexMatchesOption || signals.answerMatchesOptionValue)) {
       score = Math.max(score, 85);
-      reasons.push('Full option list match with answer index (score: 85)');
+      reasons.push('Full option list match with answer (score: 85)');
     }
 
-    if (signals.structuralQuizRelationship && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption)) {
+    if (signals.structuralQuizRelationship && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption || signals.idMatchOnOption)) {
       score = Math.max(score, 80);
       reasons.push('Structured assessment payload containing question, options, and grading key');
+    }
+
+    if (signals.scoringRule) {
+      if (signals.exactQuestionIdMatch || signals.exactQuestionTextMatch) {
+        score = Math.max(score, 85);
+        reasons.push('Author response scoring metadata correlated with question (score: 85)');
+      } else {
+        score = Math.max(score, 65);
+        reasons.push('Author response scoring metadata detected without exact question match (score: 65)');
+      }
     }
 
     // Penalties / False Positive guards

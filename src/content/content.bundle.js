@@ -654,7 +654,7 @@
           break;
         }
       }
-      const optionsKeys = ["options", "choices", "answers", "choicesList", "alternatives", "items"];
+      const optionsKeys = ["options", "choices", "answers", "choicesList", "alternatives", "items", "responses"];
       let options = null;
       let optionsKeyFound = null;
       for (const key of optionsKeys) {
@@ -679,6 +679,8 @@
         "correct_answer",
         "correctOption",
         "correct_option",
+        "correctResponse",
+        "correct_response",
         "correctChoice",
         "correct_choice",
         "answerKey",
@@ -691,28 +693,98 @@
       ];
       let answerValue = null;
       let answerIndex = null;
+      let correctOptionId = null;
+      let correctResponseId = null;
+      let isScoringRule = false;
       let evidence = null;
-      for (const key of answerIndexKeys) {
+      for (const key of ["correctOptionId", "correct_option_id"]) {
         if (obj[key] !== void 0 && obj[key] !== null) {
-          const parsed = Number(obj[key]);
-          if (!isNaN(parsed)) {
-            answerIndex = parsed;
-            answerValue = options && options[parsed] !== void 0 ? typeof options[parsed] === "object" ? options[parsed].text || options[parsed].value : options[parsed] : `Option ${parsed + 1}`;
-            evidence = `Property "${key}": ${obj[key]}`;
-            break;
+          correctOptionId = String(obj[key]);
+          break;
+        }
+      }
+      for (const key of ["correctResponseId", "correct_response_id"]) {
+        if (obj[key] !== void 0 && obj[key] !== null) {
+          correctResponseId = String(obj[key]);
+          break;
+        }
+      }
+      if (correctOptionId || correctResponseId) {
+        const targetId = correctOptionId || correctResponseId;
+        if (options && Array.isArray(options)) {
+          const matchIdx = options.findIndex((o) => {
+            if (typeof o === "object" && o !== null) {
+              return String(o.id) === targetId || String(o.optionId) === targetId || String(o.responseId) === targetId || String(o.key) === targetId || String(o.identifier) === targetId || String(o.value) === targetId;
+            }
+            return String(o) === targetId;
+          });
+          if (matchIdx !== -1) {
+            answerIndex = matchIdx;
+            const opt = options[matchIdx];
+            answerValue = typeof opt === "object" ? opt.text || opt.value || opt.label || opt.content || targetId : opt;
+          } else {
+            answerValue = targetId;
+          }
+        } else {
+          answerValue = targetId;
+        }
+        evidence = `Property "${correctOptionId ? "correctOptionId" : "correctResponseId"}": "${targetId}"`;
+      }
+      if (answerValue === null && answerIndex === null) {
+        for (const key of answerIndexKeys) {
+          if (obj[key] !== void 0 && obj[key] !== null) {
+            const parsed = Number(obj[key]);
+            if (!isNaN(parsed)) {
+              answerIndex = parsed;
+              if (options && options[parsed] !== void 0) {
+                const opt = options[parsed];
+                answerValue = typeof opt === "object" ? opt.text || opt.value || opt.label || opt.content : opt;
+                if (typeof opt === "object" && opt !== null) {
+                  if (opt.id || opt.optionId) correctOptionId = String(opt.id || opt.optionId);
+                  if (opt.responseId) correctResponseId = String(opt.responseId);
+                }
+              } else {
+                answerValue = `Option ${parsed + 1}`;
+              }
+              evidence = `Property "${key}": ${obj[key]}`;
+              break;
+            }
           }
         }
       }
-      if (answerValue === null) {
+      if (answerValue === null && answerIndex === null) {
         for (const key of answerValueKeys) {
           if (obj[key] !== void 0 && obj[key] !== null) {
             const val = obj[key];
             if (typeof val === "boolean") continue;
+            if ((key === "answerKey" || key === "answer_key" || key === "solutions") && typeof val === "object") {
+              continue;
+            }
+            if (typeof val === "object" && !Array.isArray(val)) {
+              if (val.id || val.optionId) correctOptionId = String(val.id || val.optionId);
+              if (val.responseId) correctResponseId = String(val.responseId);
+              answerValue = val.text || val.value || val.label || val.id || val.responseId;
+              if (options && options.length > 0) {
+                const matchIdx = options.findIndex((o) => {
+                  if (typeof o === "object" && o !== null) {
+                    return correctOptionId && (String(o.id) === correctOptionId || String(o.optionId) === correctOptionId) || correctResponseId && String(o.responseId) === correctResponseId || o.text && o.text === answerValue;
+                  }
+                  return String(o) === String(answerValue);
+                });
+                if (matchIdx !== -1) answerIndex = matchIdx;
+              }
+              evidence = `Property "${key}": ${JSON.stringify(val)}`;
+              break;
+            }
             if (typeof val === "number") {
               if (options && val >= 0 && val < options.length) {
                 answerIndex = val;
                 const opt = options[val];
-                answerValue = typeof opt === "object" ? opt.text || opt.value : opt;
+                answerValue = typeof opt === "object" ? opt.text || opt.value || opt.label || opt.content : opt;
+                if (typeof opt === "object" && opt !== null) {
+                  if (opt.id || opt.optionId) correctOptionId = String(opt.id || opt.optionId);
+                  if (opt.responseId) correctResponseId = String(opt.responseId);
+                }
               } else {
                 answerValue = val;
               }
@@ -734,11 +806,17 @@
               if (options && options.length > 0) {
                 const normFinal = String(finalVal).trim().toLowerCase();
                 const matchIdx = options.findIndex((o) => {
-                  const optStr = typeof o === "object" && o !== null ? o.text || o.value || o.label || "" : String(o);
-                  return optStr.trim().toLowerCase() === normFinal;
+                  const optStr = typeof o === "object" && o !== null ? o.text || o.value || o.label || o.content || "" : String(o);
+                  const optId = typeof o === "object" && o !== null ? o.id || o.optionId || o.responseId || "" : "";
+                  return optStr.trim().toLowerCase() === normFinal || String(optId).trim().toLowerCase() === normFinal;
                 });
                 if (matchIdx !== -1) {
                   answerIndex = matchIdx;
+                  const opt = options[matchIdx];
+                  if (typeof opt === "object" && opt !== null) {
+                    if (opt.id || opt.optionId) correctOptionId = String(opt.id || opt.optionId);
+                    if (opt.responseId) correctResponseId = String(opt.responseId);
+                  }
                 }
               }
               if (answerIndex === null) {
@@ -753,23 +831,55 @@
           }
         }
       }
-      if (answerValue === null && options) {
+      if (answerValue === null && options && Array.isArray(options)) {
         for (let i = 0; i < options.length; i++) {
           const opt = options[i];
           if (opt && typeof opt === "object") {
             if (opt.isCorrect === true || opt.is_correct === true || opt.correct === true || opt.correct === 1) {
               answerIndex = i;
-              answerValue = opt.text || opt.value || opt.label || `Option ${i + 1}`;
+              answerValue = opt.text || opt.value || opt.label || opt.content || `Option ${i + 1}`;
+              if (opt.id || opt.optionId) correctOptionId = String(opt.id || opt.optionId);
+              if (opt.responseId) correctResponseId = String(opt.responseId);
               evidence = `Option[${i}] has flag isCorrect: true`;
               break;
             }
           }
         }
       }
-      if (answerValue !== null || answerIndex !== null) {
+      if (answerValue === null && options && Array.isArray(options)) {
+        let maxScore = -Infinity;
+        let maxScoreIdx = -1;
+        let hasScoring = false;
+        for (let i = 0; i < options.length; i++) {
+          const opt = options[i];
+          if (opt && typeof opt === "object") {
+            const scoreVal = opt.score !== void 0 ? opt.score : opt.points !== void 0 ? opt.points : opt.weight !== void 0 ? opt.weight : void 0;
+            if (typeof scoreVal === "number" && !isNaN(scoreVal)) {
+              hasScoring = true;
+              if (scoreVal > maxScore) {
+                maxScore = scoreVal;
+                maxScoreIdx = i;
+              }
+            }
+          }
+        }
+        if (hasScoring && maxScore > 0 && maxScoreIdx !== -1) {
+          const allSame = options.every((o) => typeof o === "object" && (o.score === maxScore || o.points === maxScore || o.weight === maxScore));
+          if (!allSame) {
+            const scoredOpt = options[maxScoreIdx];
+            answerIndex = maxScoreIdx;
+            answerValue = scoredOpt.text || scoredOpt.value || scoredOpt.label || scoredOpt.content || `Option ${maxScoreIdx + 1}`;
+            if (scoredOpt.id || scoredOpt.optionId) correctOptionId = String(scoredOpt.id || scoredOpt.optionId);
+            if (scoredOpt.responseId) correctResponseId = String(scoredOpt.responseId);
+            evidence = `Option[${maxScoreIdx}] configured with author grading score/points: ${maxScore}`;
+            isScoringRule = true;
+          }
+        }
+      }
+      if (answerValue !== null || answerIndex !== null || correctOptionId !== null || correctResponseId !== null) {
         const normalizedOptions = options ? options.map((o) => {
           if (typeof o === "object" && o !== null) {
-            return String(o.text || o.value || o.label || JSON.stringify(o));
+            return String(o.text || o.value || o.label || o.content || JSON.stringify(o));
           }
           return String(o);
         }) : [];
@@ -778,8 +888,12 @@
           questionId,
           questionText,
           options: normalizedOptions,
+          authorOptions: options,
           answerValue,
           answerIndex,
+          correctOptionId,
+          correctResponseId,
+          isScoringRule,
           source,
           path,
           evidence: evidence || `Grading data present at ${path}`,
@@ -910,7 +1024,7 @@
     }
     /**
      * Safely extracts and converts JS object/array literals into JSON structures without eval
-     * Works against readable, minified, and bundled code.
+     * Works against readable, minified, and bundled code using balanced bracket parsing.
      * 
      * @param {string} code 
      * @returns {Array<Object>}
@@ -918,28 +1032,86 @@
     static extractObjectLiterals(code) {
       const results = [];
       if (typeof code !== "string") return results;
-      const hasAnswerKeyword = /(?:correct(?:Answer|Index|Option|Choice|Idx)?|solution(?:Index)?|answerKey|isCorrect)\s*[:=]/i.test(code);
-      if (!hasAnswerKeyword) {
+      const hasKeyword = /(?:correct|solution|answer|isCorrect|score|points|weight)/i.test(code);
+      if (!hasKeyword) {
         return results;
       }
-      const arrayMatch = code.match(/(?:questions|quiz|assessment|items|problems)\s*=\s*(\[\s*\{[\s\S]*?\}\s*\])/i);
-      if (arrayMatch && arrayMatch[1]) {
-        const parsedArray = this.safeParseJsLiteral(arrayMatch[1]);
-        if (parsedArray) {
-          results.push(parsedArray);
-        }
-      }
-      if (results.length === 0) {
-        const objRegex = /\{[^{}]*(?:question|prompt|text)[^{}]*(?:options|choices)[^{}]*(?:correct|answer|solution)[^{}]*\}/gi;
-        let objMatch;
-        while ((objMatch = objRegex.exec(code)) !== null) {
-          const parsedObj = this.safeParseJsLiteral(objMatch[0]);
-          if (parsedObj) {
-            results.push(parsedObj);
+      const assignmentRegex = /=\s*([{\[])/g;
+      let match;
+      while ((match = assignmentRegex.exec(code)) !== null) {
+        const startIndex = match.index + match[0].length - 1;
+        const literalStr = this.extractBalancedLiteral(code, startIndex);
+        if (literalStr) {
+          const parsed = this.safeParseJsLiteral(literalStr);
+          if (parsed && typeof parsed === "object") {
+            results.push(parsed);
           }
         }
       }
       return results;
+    }
+    /**
+     * Extracts a balanced JS object/array literal starting at startIndex
+     * Tracks string literals, escapes, and comments safely.
+     * 
+     * @param {string} code 
+     * @param {number} startIndex 
+     * @returns {string|null}
+     */
+    static extractBalancedLiteral(code, startIndex) {
+      const startChar = code[startIndex];
+      if (startChar !== "{" && startChar !== "[") return null;
+      let depth = 0;
+      let inString = false;
+      let stringQuote = "";
+      let inLineComment = false;
+      let inBlockComment = false;
+      for (let i = startIndex; i < code.length; i++) {
+        const ch = code[i];
+        const prev = i > 0 ? code[i - 1] : "";
+        if (inLineComment) {
+          if (ch === "\n" || ch === "\r") {
+            inLineComment = false;
+          }
+          continue;
+        }
+        if (inBlockComment) {
+          if (ch === "/" && prev === "*") {
+            inBlockComment = false;
+          }
+          continue;
+        }
+        if (inString) {
+          if (ch === stringQuote && prev !== "\\") {
+            inString = false;
+          }
+          continue;
+        }
+        if (ch === "/" && code[i + 1] === "/") {
+          inLineComment = true;
+          i++;
+          continue;
+        }
+        if (ch === "/" && code[i + 1] === "*") {
+          inBlockComment = true;
+          i++;
+          continue;
+        }
+        if (ch === '"' || ch === "'" || ch === "`") {
+          inString = true;
+          stringQuote = ch;
+          continue;
+        }
+        if (ch === "{" || ch === "[") {
+          depth++;
+        } else if (ch === "}" || ch === "]") {
+          depth--;
+          if (depth === 0) {
+            return code.slice(startIndex, i + 1);
+          }
+        }
+      }
+      return null;
     }
     /**
      * Safely transforms a JavaScript object/array literal string into a parsed JSON object
@@ -1147,7 +1319,7 @@
         score = Math.max(score, 95);
         reasons.push("Direct DOM attribute on option element (score +95)");
       }
-      if (signals.exactQuestionIdMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption)) {
+      if (signals.exactQuestionIdMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption || signals.idMatchOnOption)) {
         score = Math.max(score, 100);
         reasons.push("Exact question ID match with correlated option (score: 100)");
       } else if (signals.exactQuestionIdMatch) {
@@ -1157,20 +1329,29 @@
       if (signals.exactQuestionTextMatch && signals.answerIndexMatchesOption) {
         score = Math.max(score, 90);
         reasons.push("Exact question text match with answer index (score: 90)");
-      } else if (signals.exactQuestionTextMatch && signals.answerMatchesOptionValue) {
+      } else if (signals.exactQuestionTextMatch && (signals.answerMatchesOptionValue || signals.idMatchOnOption)) {
         score = Math.max(score, 85);
         reasons.push("Exact question text match with answer value (score: 85)");
-      } else if (signals.normalizedQuestionTextMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption)) {
+      } else if (signals.normalizedQuestionTextMatch && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption || signals.idMatchOnOption)) {
         score = Math.max(score, 80);
         reasons.push("Normalized question text match with answer (score: 80)");
       }
-      if (signals.exactOptionListMatch && signals.answerIndexMatchesOption) {
+      if (signals.exactOptionListMatch && (signals.answerIndexMatchesOption || signals.answerMatchesOptionValue)) {
         score = Math.max(score, 85);
-        reasons.push("Full option list match with answer index (score: 85)");
+        reasons.push("Full option list match with answer (score: 85)");
       }
-      if (signals.structuralQuizRelationship && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption)) {
+      if (signals.structuralQuizRelationship && (signals.answerMatchesOptionValue || signals.answerIndexMatchesOption || signals.idMatchOnOption)) {
         score = Math.max(score, 80);
         reasons.push("Structured assessment payload containing question, options, and grading key");
+      }
+      if (signals.scoringRule) {
+        if (signals.exactQuestionIdMatch || signals.exactQuestionTextMatch) {
+          score = Math.max(score, 85);
+          reasons.push("Author response scoring metadata correlated with question (score: 85)");
+        } else {
+          score = Math.max(score, 65);
+          reasons.push("Author response scoring metadata detected without exact question match (score: 65)");
+        }
       }
       if (signals.isInstructionOrPrompt) {
         score = Math.min(score, 20);
@@ -1269,8 +1450,10 @@
         exactOptionListMatch: false,
         answerMatchesOptionValue: false,
         answerIndexMatchesOption: false,
+        idMatchOnOption: false,
         domDirectAttribute: !!finding.domDirectAttribute,
         structuralQuizRelationship: !!finding.structural,
+        scoringRule: !!finding.isScoringRule,
         keywordOnly: false,
         isInstructionOrPrompt: false
       };
@@ -1312,20 +1495,71 @@
       }
       let matchedOption = null;
       let targetIndex = null;
-      if (finding.answerIndex !== null && finding.answerIndex !== void 0) {
-        const idx = Number(finding.answerIndex);
-        if (idx >= 0 && idx < q.options.length) {
-          targetIndex = idx;
-          matchedOption = q.options[idx];
-          signals.answerIndexMatchesOption = true;
+      const targetIds = [finding.correctOptionId, finding.correctResponseId].filter(Boolean).map(String);
+      if (targetIds.length > 0) {
+        for (const opt of q.options) {
+          const optIds = [
+            opt.optionId,
+            opt.value,
+            opt.element?.getAttribute ? opt.element.getAttribute("data-option-id") : null,
+            opt.element?.getAttribute ? opt.element.getAttribute("data-response-id") : null,
+            opt.element?.id,
+            opt.inputElement?.value
+          ].filter(Boolean).map(String);
+          if (targetIds.some((tid) => optIds.includes(tid))) {
+            matchedOption = opt;
+            targetIndex = opt.index;
+            signals.answerMatchesOptionValue = true;
+            signals.idMatchOnOption = true;
+            break;
+          }
+        }
+      }
+      const authorList = finding.authorOptions || finding.options;
+      if (!matchedOption && authorList && Array.isArray(authorList) && finding.answerIndex !== null && finding.answerIndex !== void 0) {
+        const authorItem = authorList[finding.answerIndex];
+        if (authorItem !== void 0) {
+          const authorTargetText = typeof authorItem === "object" && authorItem !== null ? authorItem.text || authorItem.value || authorItem.label || authorItem.content : String(authorItem);
+          const authorTargetId = typeof authorItem === "object" && authorItem !== null ? authorItem.id || authorItem.optionId || authorItem.responseId : null;
+          if (authorTargetId) {
+            const authorTargetIdStr = String(authorTargetId);
+            for (const opt of q.options) {
+              const optIds = [
+                opt.optionId,
+                opt.value,
+                opt.element?.getAttribute ? opt.element.getAttribute("data-option-id") : null,
+                opt.element?.getAttribute ? opt.element.getAttribute("data-response-id") : null,
+                opt.element?.id,
+                opt.inputElement?.value
+              ].filter(Boolean).map(String);
+              if (optIds.includes(authorTargetIdStr)) {
+                matchedOption = opt;
+                targetIndex = opt.index;
+                signals.answerMatchesOptionValue = true;
+                signals.idMatchOnOption = true;
+                break;
+              }
+            }
+          }
+          if (!matchedOption && authorTargetText) {
+            const normTarget = normalizeText(String(authorTargetText));
+            for (const opt of q.options) {
+              if (opt.normalizedText === normTarget || opt.text && opt.text.trim().toLowerCase() === String(authorTargetText).trim().toLowerCase() || opt.value === String(authorTargetText) || opt.rawText && opt.rawText.toLowerCase().includes(normTarget)) {
+                matchedOption = opt;
+                targetIndex = opt.index;
+                signals.answerMatchesOptionValue = true;
+                break;
+              }
+            }
+          }
         }
       }
       if (!matchedOption && finding.answerValue !== null && finding.answerValue !== void 0) {
         const valStr = String(finding.answerValue).trim();
         const normVal = normalizeText(valStr);
-        const letterIdx = parseOptionIndex(valStr);
-        if (letterIdx !== null && letterIdx >= 0 && letterIdx < q.options.length) {
-          if (valStr.length === 1 && /^[A-H]$/i.test(valStr)) {
+        if (valStr.length === 1 && /^[A-H]$/i.test(valStr)) {
+          const letterIdx = parseOptionIndex(valStr);
+          if (letterIdx !== null && letterIdx >= 0 && letterIdx < q.options.length) {
             targetIndex = letterIdx;
             matchedOption = q.options[letterIdx];
             signals.answerIndexMatchesOption = true;
@@ -1333,7 +1567,7 @@
         }
         if (!matchedOption) {
           for (const opt of q.options) {
-            if (opt.normalizedText === normVal || opt.text.trim() === valStr || opt.value === valStr) {
+            if (opt.normalizedText === normVal || opt.text && opt.text.trim().toLowerCase() === valStr.toLowerCase() || opt.value === valStr) {
               matchedOption = opt;
               targetIndex = opt.index;
               signals.answerMatchesOptionValue = true;
@@ -1343,13 +1577,30 @@
         }
         if (!matchedOption) {
           for (const opt of q.options) {
-            if (opt.optionId === valStr) {
+            const optIds = [
+              opt.optionId,
+              opt.value,
+              opt.element?.getAttribute ? opt.element.getAttribute("data-option-id") : null,
+              opt.element?.getAttribute ? opt.element.getAttribute("data-response-id") : null,
+              opt.element?.id,
+              opt.inputElement?.value
+            ].filter(Boolean).map(String);
+            if (optIds.includes(valStr)) {
               matchedOption = opt;
               targetIndex = opt.index;
               signals.answerMatchesOptionValue = true;
+              signals.idMatchOnOption = true;
               break;
             }
           }
+        }
+      }
+      if (!matchedOption && finding.answerIndex !== null && finding.answerIndex !== void 0) {
+        const idx = Number(finding.answerIndex);
+        if (idx >= 0 && idx < q.options.length) {
+          targetIndex = idx;
+          matchedOption = q.options[idx];
+          signals.answerIndexMatchesOption = true;
         }
       }
       if (!signals.exactQuestionIdMatch && !signals.exactQuestionTextMatch && !signals.normalizedQuestionTextMatch && !signals.domDirectAttribute) {
@@ -1511,7 +1762,7 @@
         createElement("span", { className: "quizkey-overlay-icon" }, "\u{1F50E}"),
         createElement("strong", { className: "quizkey-overlay-title" }, " QUIZKEY INSPECTOR")
       ]);
-      const subtitle = createElement("div", { className: "quizkey-overlay-subtitle" }, "Client-side answer exposed");
+      const subtitle = createElement("div", { className: "quizkey-overlay-subtitle" }, "AUTHOR ANSWER KEY EXPOSED");
       const body = createElement("div", { className: "quizkey-overlay-body" });
       const correctOptRow = createElement("div", { className: "quizkey-overlay-row" }, [
         createElement("span", { className: "quizkey-overlay-label" }, "Correct option: "),

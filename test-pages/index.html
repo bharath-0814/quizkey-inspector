@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QuizKey Inspector - Test Fixture Hub</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 32px; max-width: 800px; margin: 0 auto; line-height: 1.6; color: #1e293b; }
+    h1 { color: #0f172a; margin-bottom: 8px; }
+    .subtitle { color: #64748b; font-size: 16px; margin-bottom: 24px; }
+    .card-list { display: grid; gap: 16px; }
+    .fixture-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; transition: border-color 0.2s; }
+    .fixture-card:hover { border-color: #3b82f6; }
+    .fixture-title { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+    .fixture-title a { color: #2563eb; text-decoration: none; }
+    .fixture-title a:hover { text-decoration: underline; }
+    .fixture-desc { color: #475569; font-size: 14px; margin: 4px 0 8px 0; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 9999px; text-transform: uppercase; }
+    .badge-vuln { background-color: #fee2e2; color: #991b1b; }
+    .badge-secure { background-color: #dcfce7; color: #166534; }
+  </style>
+</head>
+<body>
+  <h1>🔎 QuizKey Inspector — Test Fixture Hub</h1>
+  <p class="subtitle">Static demonstration fixtures for authorized assessment security auditing. Each fixture tests a specific client-side grading exposure pattern.</p>
+
+  <div class="card-list">
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-randomized.html">1. Randomized Option Order</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Author state maintains original order with <code>correctIndex: 1</code> (UDP), but client renders options shuffled as C. UDP. Verifies option text mapping overrides display index.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-response-ids.html">2. Author Response & Option IDs</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Author grading uses <code>correctOptionId: "opt_udp"</code> mapped against DOM options containing <code>data-option-id</code> attributes.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-scoring.html">3. Author Response Scoring</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Each choice includes author grading points (<code>score: 1</code> vs <code>score: 0</code>) leaked in client state.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-choices-flags.html">4. Choices Flagged with isCorrect</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Choice objects delivered to the browser contain embedded <code>isCorrect: true</code> flags.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-answer-key-map.html">5. External Answer Key Dictionary</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Assessment configuration leaks an <code>answerKey: { "1": "B" }</code> dictionary mapping question IDs to answers.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-js.html">6. Inline JavaScript Variable</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Page script defines a global JavaScript array containing <code>correctAnswer</code> and <code>correctIndex</code>.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-json.html">7. Embedded JSON Hydration State</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">A <code>&lt;script type="application/json"&gt;</code> element leaks question answer data in SSR/hydration state.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-api.html">8. Network API Response</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Questions fetched over XHR/fetch legitimately contain <code>correctIndex: 1</code> in JSON payloads.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-storage.html">9. Browser Storage (localStorage)</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Cached quiz state stored in <code>localStorage</code> contains answers.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="exposed-encoded.html">10. Encoded HTML DOM Attribute</a> <span class="badge badge-vuln">Vulnerable</span></div>
+      <p class="fixture-desc">Hidden Base64 encoded payload in DOM attribute <code>data-correct-answer</code>.</p>
+    </div>
+
+    <div class="fixture-card">
+      <div class="fixture-title"><a href="secure.html">11. Secure Server-Side Architecture</a> <span class="badge badge-secure">Secure</span></div>
+      <p class="fixture-desc">Server retains grading keys and sends questions only. QuizKey Inspector reports <strong>🟢 NO CLIENT-SIDE ANSWER KEY DETECTED</strong>.</p>
+    </div>
+  </div>
+</body>
+</html>

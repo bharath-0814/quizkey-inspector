@@ -76,8 +76,8 @@ export class Renderer {
       createElement('strong', { className: 'quizkey-overlay-title' }, ' QUIZKEY INSPECTOR')
     ]);
 
-    // Subtitle: Client-side answer exposed
-    const subtitle = createElement('div', { className: 'quizkey-overlay-subtitle' }, 'Client-side answer exposed');
+    // Subtitle: AUTHOR ANSWER KEY EXPOSED
+    const subtitle = createElement('div', { className: 'quizkey-overlay-subtitle' }, 'AUTHOR ANSWER KEY EXPOSED');
 
     // Body Grid
     const body = createElement('div', { className: 'quizkey-overlay-body' });

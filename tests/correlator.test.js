@@ -148,3 +148,138 @@ test('Correlator - SECURE CASE: when rawFindings is empty, returns empty array',
   const correlated = Correlator.correlate(domQuestions, []);
   assert.strictEqual(correlated.length, 0, 'No findings should be correlated when no answers exist');
 });
+
+test('Correlator - RANDOMIZED OPTION ORDER: correctly correlates answer text when DOM options are shuffled', () => {
+  // Author defined options: ["TCP", "UDP", "FTP", "SSH"] with correctIndex: 1 ("UDP")
+  // Webpage rendered them in shuffled/randomized order:
+  // A. FTP (idx 0), B. SSH (idx 1), C. UDP (idx 2), D. TCP (idx 3)
+  const domQuestions = [
+    {
+      questionId: "42",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'FTP', normalizedText: 'ftp' },
+        { index: 1, letter: 'B', text: 'SSH', normalizedText: 'ssh' },
+        { index: 2, letter: 'C', text: 'UDP', normalizedText: 'udp' },
+        { index: 3, letter: 'D', text: 'TCP', normalizedText: 'tcp' }
+      ]
+    }
+  ];
+
+  const rawFindings = [
+    {
+      questionId: "42",
+      questionText: "Which protocol is connectionless?",
+      options: ["TCP", "UDP", "FTP", "SSH"], // Author original options list
+      answerIndex: 1, // Author index 1 -> UDP
+      answerValue: "UDP",
+      source: "API Payload",
+      structural: true
+    }
+  ];
+
+  const correlated = Correlator.correlate(domQuestions, rawFindings);
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  // Crucial assertion: Correlator must resolve to C. UDP (index 2 in DOM), NOT index 1 (B. SSH)
+  assert.strictEqual(correlated[0].matchedOption.index, 2);
+  assert.strictEqual(correlated[0].matchedOption.letter, 'C');
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+  assert.strictEqual(correlated[0].displayAnswer, 'C. UDP');
+});
+
+test('Correlator - correctOptionId matching against DOM optionId / data-option-id', () => {
+  const domQuestions = [
+    {
+      questionId: "q10",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'TCP', optionId: 'opt-tcp', normalizedText: 'tcp' },
+        { index: 1, letter: 'B', text: 'UDP', optionId: 'opt-udp', normalizedText: 'udp' }
+      ]
+    }
+  ];
+
+  const rawFindings = [
+    {
+      questionId: "q10",
+      questionText: "Which protocol is connectionless?",
+      correctOptionId: "opt-udp",
+      answerValue: "UDP",
+      source: "API Payload",
+      structural: true
+    }
+  ];
+
+  const correlated = Correlator.correlate(domQuestions, rawFindings);
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  assert.strictEqual(correlated[0].matchedOption.optionId, 'opt-udp');
+  assert.strictEqual(correlated[0].matchedOption.letter, 'B');
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+});
+
+test('Correlator - correctResponseId matching against DOM option value', () => {
+  const domQuestions = [
+    {
+      questionId: "q20",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'TCP', value: 'resp_1', normalizedText: 'tcp' },
+        { index: 1, letter: 'B', text: 'UDP', value: 'resp_2', normalizedText: 'udp' }
+      ]
+    }
+  ];
+
+  const rawFindings = [
+    {
+      questionId: "q20",
+      questionText: "Which protocol is connectionless?",
+      correctResponseId: "resp_2",
+      answerValue: "UDP",
+      source: "State",
+      structural: true
+    }
+  ];
+
+  const correlated = Correlator.correlate(domQuestions, rawFindings);
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  assert.strictEqual(correlated[0].matchedOption.value, 'resp_2');
+  assert.strictEqual(correlated[0].matchedOption.letter, 'B');
+});
+
+test('Correlator - author response scoring produces HIGH confidence when matched with question ID', () => {
+  const domQuestions = [
+    {
+      questionId: "q30",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'TCP', normalizedText: 'tcp' },
+        { index: 1, letter: 'B', text: 'UDP', normalizedText: 'udp' }
+      ]
+    }
+  ];
+
+  const rawFindings = [
+    {
+      questionId: "q30",
+      questionText: "Which protocol is connectionless?",
+      answerValue: "UDP",
+      answerIndex: 1,
+      isScoringRule: true,
+      source: "Scored Choice State",
+      structural: true
+    }
+  ];
+
+  const correlated = Correlator.correlate(domQuestions, rawFindings);
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  assert.strictEqual(correlated[0].matchedOption.letter, 'B');
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+});

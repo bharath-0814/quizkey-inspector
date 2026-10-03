@@ -161,9 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!findings || findings.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty-state';
-      empty.textContent = isAuthorized
-        ? (Number(metricQuestions.textContent) > 0 ? '🟢 No client-side answer keys detected.' : 'No questions detected on this page.')
-        : 'Audit disabled. Authorize this site to view findings.';
+      if (isAuthorized) {
+        if (Number(metricQuestions.textContent) > 0) {
+          empty.innerHTML = '<strong>🟢 NO CLIENT-SIDE ANSWER KEY DETECTED</strong><br><small style="color: #64748b; margin-top: 4px; display: block;">This assessment appears to grade server-side. No client-side grading metadata was leaked.</small>';
+        } else {
+          empty.textContent = 'No questions detected on this page.';
+        }
+      } else {
+        empty.textContent = 'Audit disabled. Authorize this site to view findings.';
+      }
       findingsList.appendChild(empty);
       return;
     }

@@ -226,3 +226,211 @@ test('Integration 5 - Test Page: secure.html (Server-Side Grading, NO CLIENT-SID
 
   assert.strictEqual(statusText, 'NO CLIENT-SIDE ANSWER KEY DETECTED');
 });
+
+test('Integration 6 - Test Page: exposed-randomized.html (Randomized Option Order Resolution)', () => {
+  const scriptContent = `
+    const quizState = {
+      questions: [
+        {
+          id: 42,
+          question: "Which protocol is connectionless?",
+          options: ["TCP", "UDP", "FTP", "SSH"],
+          correctIndex: 1
+        }
+      ]
+    };
+  `;
+
+  // Rendered DOM has options in shuffled order:
+  // A. FTP (0), B. SSH (1), C. UDP (2), D. TCP (3)
+  const mockDomQuestions = [
+    {
+      questionId: "42",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'FTP', normalizedText: 'ftp' },
+        { index: 1, letter: 'B', text: 'SSH', normalizedText: 'ssh' },
+        { index: 2, letter: 'C', text: 'UDP', normalizedText: 'udp' },
+        { index: 3, letter: 'D', text: 'TCP', normalizedText: 'tcp' }
+      ],
+      domFindings: []
+    }
+  ];
+
+  const doc = createMockDoc([scriptContent]);
+  const scriptFindings = ScriptAnalyzer.analyzeScripts(doc.querySelectorAll('script'));
+  const correlated = Correlator.correlate(mockDomQuestions, scriptFindings);
+
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  // Must correlate to option 2 (C. UDP), NOT option 1 (B. SSH)
+  assert.strictEqual(correlated[0].matchedOption.index, 2);
+  assert.strictEqual(correlated[0].matchedOption.letter, 'C');
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+  assert.strictEqual(correlated[0].displayAnswer, 'C. UDP');
+});
+
+test('Integration 7 - Test Page: exposed-response-ids.html (Author correctOptionId)', () => {
+  const scriptContent = `
+    const assessmentData = {
+      items: [
+        {
+          id: "q100",
+          question: "Which protocol is connectionless?",
+          choices: [
+            { id: "opt_tcp", text: "TCP" },
+            { id: "opt_udp", text: "UDP" },
+            { id: "opt_ftp", text: "FTP" },
+            { id: "opt_ssh", text: "SSH" }
+          ],
+          correctOptionId: "opt_udp"
+        }
+      ]
+    };
+  `;
+
+  const mockDomQuestions = [
+    {
+      questionId: "q100",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'TCP', optionId: 'opt_tcp', normalizedText: 'tcp' },
+        { index: 1, letter: 'B', text: 'UDP', optionId: 'opt_udp', normalizedText: 'udp' },
+        { index: 2, letter: 'C', text: 'FTP', optionId: 'opt_ftp', normalizedText: 'ftp' },
+        { index: 3, letter: 'D', text: 'SSH', optionId: 'opt_ssh', normalizedText: 'ssh' }
+      ],
+      domFindings: []
+    }
+  ];
+
+  const doc = createMockDoc([scriptContent]);
+  const scriptFindings = ScriptAnalyzer.analyzeScripts(doc.querySelectorAll('script'));
+  const correlated = Correlator.correlate(mockDomQuestions, scriptFindings);
+
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  assert.strictEqual(correlated[0].matchedOption.optionId, 'opt_udp');
+  assert.strictEqual(correlated[0].matchedOption.letter, 'B');
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+});
+
+test('Integration 8 - Test Page: exposed-scoring.html (Author Response Scoring)', () => {
+  const scriptContent = `
+    const quizMetadata = {
+      questions: [
+        {
+          id: "q200",
+          question: "Which protocol is connectionless?",
+          options: [
+            { text: "TCP", score: 0 },
+            { text: "UDP", score: 1 },
+            { text: "FTP", score: 0 },
+            { text: "SSH", score: 0 }
+          ]
+        }
+      ]
+    };
+  `;
+
+  const mockDomQuestions = [
+    {
+      questionId: "q200",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'TCP', normalizedText: 'tcp' },
+        { index: 1, letter: 'B', text: 'UDP', normalizedText: 'udp' },
+        { index: 2, letter: 'C', text: 'FTP', normalizedText: 'ftp' },
+        { index: 3, letter: 'D', text: 'SSH', normalizedText: 'ssh' }
+      ],
+      domFindings: []
+    }
+  ];
+
+  const doc = createMockDoc([scriptContent]);
+  const scriptFindings = ScriptAnalyzer.analyzeScripts(doc.querySelectorAll('script'));
+  const correlated = Correlator.correlate(mockDomQuestions, scriptFindings);
+
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+  assert.strictEqual(correlated[0].matchedOption.letter, 'B');
+});
+
+test('Integration 9 - Test Page: exposed-choices-flags.html (isCorrect Choice Flags)', () => {
+  const scriptContent = `
+    const examQuestions = [
+      {
+        id: "q300",
+        question: "Which protocol is connectionless?",
+        options: [
+          { text: "TCP", isCorrect: false },
+          { text: "UDP", isCorrect: true },
+          { text: "FTP", isCorrect: false },
+          { text: "SSH", isCorrect: false }
+        ]
+      }
+    ];
+  `;
+
+  const mockDomQuestions = [
+    {
+      questionId: "q300",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'TCP', normalizedText: 'tcp' },
+        { index: 1, letter: 'B', text: 'UDP', normalizedText: 'udp' },
+        { index: 2, letter: 'C', text: 'FTP', normalizedText: 'ftp' },
+        { index: 3, letter: 'D', text: 'SSH', normalizedText: 'ssh' }
+      ],
+      domFindings: []
+    }
+  ];
+
+  const doc = createMockDoc([scriptContent]);
+  const scriptFindings = ScriptAnalyzer.analyzeScripts(doc.querySelectorAll('script'));
+  const correlated = Correlator.correlate(mockDomQuestions, scriptFindings);
+
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+  assert.strictEqual(correlated[0].matchedOption.letter, 'B');
+});
+
+test('Integration 10 - Test Page: exposed-answer-key-map.html (External Answer Key Map)', () => {
+  const scriptContent = `
+    const examConfig = {
+      title: "Networking 101",
+      answerKey: {
+        "1": "B"
+      }
+    };
+  `;
+
+  const mockDomQuestions = [
+    {
+      questionId: "1",
+      questionText: "Which protocol is connectionless?",
+      normalizedText: "which protocol is connectionless",
+      options: [
+        { index: 0, letter: 'A', text: 'TCP', normalizedText: 'tcp' },
+        { index: 1, letter: 'B', text: 'UDP', normalizedText: 'udp' },
+        { index: 2, letter: 'C', text: 'FTP', normalizedText: 'ftp' },
+        { index: 3, letter: 'D', text: 'SSH', normalizedText: 'ssh' }
+      ],
+      domFindings: []
+    }
+  ];
+
+  const doc = createMockDoc([scriptContent]);
+  const scriptFindings = ScriptAnalyzer.analyzeScripts(doc.querySelectorAll('script'));
+  const correlated = Correlator.correlate(mockDomQuestions, scriptFindings);
+
+  assert.strictEqual(correlated.length, 1);
+  assert.strictEqual(correlated[0].confidence, ConfidenceLevel.HIGH);
+  assert.strictEqual(correlated[0].matchedOption.letter, 'B');
+  assert.strictEqual(correlated[0].matchedOption.text, 'UDP');
+});

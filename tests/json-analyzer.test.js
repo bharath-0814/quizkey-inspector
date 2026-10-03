@@ -133,3 +133,92 @@ test('JsonAnalyzer - SECURE CASE: question list without answers produces 0 findi
   const findings = JsonAnalyzer.analyze(securePayload, 'Secure Exam Payload');
   assert.strictEqual(findings.length, 0, 'Secure questions must produce zero findings');
 });
+
+test('JsonAnalyzer - detects correctOptionId matching an option in choices', () => {
+  const payload = {
+    id: "q-101",
+    question: "Which protocol is connectionless?",
+    choices: [
+      { id: "opt_tcp", text: "TCP" },
+      { id: "opt_udp", text: "UDP" },
+      { id: "opt_ftp", text: "FTP" }
+    ],
+    correctOptionId: "opt_udp"
+  };
+
+  const findings = JsonAnalyzer.analyze(payload, 'Author Payload');
+  assert.strictEqual(findings.length, 1);
+  assert.strictEqual(findings[0].correctOptionId, "opt_udp");
+  assert.strictEqual(findings[0].answerValue, "UDP");
+  assert.strictEqual(findings[0].answerIndex, 1);
+});
+
+test('JsonAnalyzer - detects correctResponseId matching an option in responses', () => {
+  const payload = {
+    id: "q-202",
+    question: "Which protocol is connectionless?",
+    responses: [
+      { responseId: "resp_1", text: "TCP" },
+      { responseId: "resp_2", text: "UDP" }
+    ],
+    correctResponseId: "resp_2"
+  };
+
+  const findings = JsonAnalyzer.analyze(payload, 'Author Payload');
+  assert.strictEqual(findings.length, 1);
+  assert.strictEqual(findings[0].correctResponseId, "resp_2");
+  assert.strictEqual(findings[0].answerValue, "UDP");
+  assert.strictEqual(findings[0].answerIndex, 1);
+});
+
+test('JsonAnalyzer - detects author response scoring (score > 0 indicates correct answer)', () => {
+  const payload = {
+    id: "q-303",
+    question: "Which protocol is connectionless?",
+    options: [
+      { id: "c1", text: "TCP", score: 0 },
+      { id: "c2", text: "UDP", score: 1 },
+      { id: "c3", text: "FTP", score: 0 }
+    ]
+  };
+
+  const findings = JsonAnalyzer.analyze(payload, 'Scoring Payload');
+  assert.strictEqual(findings.length, 1);
+  assert.strictEqual(findings[0].isScoringRule, true);
+  assert.strictEqual(findings[0].answerIndex, 1);
+  assert.strictEqual(findings[0].answerValue, "UDP");
+  assert.strictEqual(findings[0].correctOptionId, "c2");
+});
+
+test('JsonAnalyzer - detects author points weighting (points > 0 indicates correct answer)', () => {
+  const payload = {
+    id: "q-404",
+    question: "What is 2 + 2?",
+    choices: [
+      { text: "3", points: 0 },
+      { text: "4", points: 10 },
+      { text: "5", points: 0 }
+    ]
+  };
+
+  const findings = JsonAnalyzer.analyze(payload, 'Points Payload');
+  assert.strictEqual(findings.length, 1);
+  assert.strictEqual(findings[0].isScoringRule, true);
+  assert.strictEqual(findings[0].answerIndex, 1);
+  assert.strictEqual(findings[0].answerValue, "4");
+});
+
+test('JsonAnalyzer - detects correctResponse object with id and text', () => {
+  const payload = {
+    id: "q-505",
+    question: "Which protocol is connectionless?",
+    options: ["TCP", "UDP", "FTP"],
+    correctResponse: { id: "opt-udp", text: "UDP" }
+  };
+
+  const findings = JsonAnalyzer.analyze(payload, 'Object Response Payload');
+  assert.strictEqual(findings.length, 1);
+  assert.strictEqual(findings[0].answerValue, "UDP");
+  assert.strictEqual(findings[0].answerIndex, 1);
+  assert.strictEqual(findings[0].correctOptionId, "opt-udp");
+});
